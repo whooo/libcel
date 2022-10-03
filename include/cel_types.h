@@ -1,0 +1,119 @@
+/* Copyright (c) 2022 by Erik Larsson
+   SPDX-License-Identifier: GPL-3.0-or-later
+*/
+
+#include <tss2/tss2_tpm2_types.h>
+
+#ifndef _CEL_H_
+#define _CEL_H_
+
+typedef UINT32 CEL_RC;
+#define CEL_RC_SUCCESS 0
+#define CEL_RC_BAD_REFERENCE 2
+#define CEL_RC_SHORT_BUFFER 3
+#define CEL_RC_UNSUPPORTED_DIGEST 4
+#define CEL_RC_INVALID_TYPE 5
+#define CEL_RC_VALUE_TOO_LARGE 6
+#define CEL_RC_INVALID_VALUE 7
+
+typedef UINT32 TPMI_STATE_TRANS;
+typedef UINT32 TPMI_CELMGTTYPE;
+
+typedef BYTE CEL_TYPE;
+#define CEL_TYPE_RECNUM 0
+#define CEL_TYPE_PCR 1
+#define CEL_TYPE_NV_INDEX 2
+#define CEL_TYPE_DIGESTS 3
+#define CEL_TYPE_MGMT 4
+#define CEL_TYPE_PCCLIENT_STD 5
+#define CEL_TYPE_IMA_TEMPLATE 7
+#define CEL_TYPE_IMA_TLV 8
+
+#define CEL_TYPE_MGMT_CEL_VERSION 1
+#define CEL_TYPE_MGMT_FIRMWARE_END 2
+#define CEL_TYPE_MGMT_CEL_TIMESTAMP 80
+#define CEL_TYPE_MGMT_STATE_TRANS 81
+
+#define CEL_TYPE_MGMT_CEL_VERSION_MAJOR 0
+#define CEL_TYPE_MGMT_CEL_VERSION_MINOR 1
+
+#define CEL_TYPE_PCCLIENT_STD_EVENT_TYPE 0
+#define CEL_TYPE_PCCLIENT_STD_EVENT_DATA 1
+
+#define CEL_TYPE_IMA_TEMPLATE_NAME 0
+#define CEL_TYPE_IMA_TEMPLATE_DATA 1
+
+#define CEL_STATE_TRANS_SUSPEND 0
+#define CEL_STATE_TRANS_HIBERNATE 1
+#define CEL_STATE_TRANS_KEXEC 2
+
+typedef CEL_TYPE TPMI_CEL_CONTENT_TYPE;
+
+typedef UINT32 TPMI_PC_CLIENT_EVENTS;
+typedef UINT64 RECNUM;
+
+typedef struct BYTEBUFFER BYTEBUFFER;
+struct BYTEBUFFER {
+  UINT32 size;
+  BYTE buffer[65536];
+};
+
+typedef BYTEBUFFER IMA_TLV;
+
+typedef struct TPMS_EVENT_IMA_TEMPLATE TPMS_EVENT_IMA_TEMPLATE;
+struct TPMS_EVENT_IMA_TEMPLATE {
+  BYTEBUFFER template_name;
+  BYTEBUFFER template_data;
+};
+
+typedef struct TPMS_EVENT_PCCLIENT_STD TPMS_EVENT_PCCLIENT_STD;
+struct TPMS_EVENT_PCCLIENT_STD {
+  TPMI_PC_CLIENT_EVENTS event_type;
+  BYTEBUFFER event_data;
+};
+
+typedef struct TPMS_CEL_VERSION TPMS_CEL_VERSION;
+struct TPMS_CEL_VERSION {
+  UINT16 major;
+  UINT16 minor;
+};
+
+typedef union TPMU_CELMGT TPMU_CELMGT;
+union TPMU_CELMGT {
+  TPMS_CEL_VERSION cel_version;
+  TPMS_EMPTY firmware_end;
+  UINT64 cel_timestamp;
+  TPMI_STATE_TRANS state_trans;
+};
+
+typedef struct TPMS_EVENT_CELMGT TPMS_EVENT_CELMGT;
+struct TPMS_EVENT_CELMGT {
+  TPMI_CELMGTTYPE type;
+  TPMU_CELMGT data;
+};
+
+typedef struct TPML_EVENT_CELMGT TPML_EVENT_CELMGT;
+struct TPML_EVENT_CELMGT {
+  UINT16 count;
+  TPMS_EVENT_CELMGT events[16];
+};
+
+typedef union TPMU_EVENT_CONTENT TPMU_EVENT_CONTENT;
+union TPMU_EVENT_CONTENT {
+  TPML_EVENT_CELMGT celmgt;
+  TPMS_EVENT_PCCLIENT_STD pcclient_std;
+  TPMS_EVENT_IMA_TEMPLATE ima_template;
+  IMA_TLV ima_tlv;
+};
+
+typedef struct TPMS_CEL_EVENT TPMS_CEL_EVENT;
+struct TPMS_CEL_EVENT {
+  RECNUM recnum;
+  TPMI_DH_PCR pcr;
+  TPMI_RH_NV_INDEX nv_index;
+  TPML_DIGEST_VALUES digests;
+  TPMI_CEL_CONTENT_TYPE content_type;
+  TPMU_EVENT_CONTENT content;
+};
+
+#endif
