@@ -43,6 +43,24 @@ UINT64 get_seqnum(
 }
 
 CEL_RC
+CEL_Parse_Get_RECNUM(
+  CEL_PARSE_CONTEXT *ctx,
+  TPM2_HANDLE pcr,
+  RECNUM *recnum)
+{
+  CHECK_NULL(ctx);
+  CHECK_NULL(recnum);
+
+  if (pcr >= TPM2_MAX_PCRS) {
+    return CEL_RC_INVALID_VALUE;
+  }
+
+  *recnum = get_seqnum(ctx, pcr);
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 CEL_Parse_UEFI_Event(
   CEL_PARSE_CONTEXT *ctx,
   TPMS_CEL_EVENT *event,

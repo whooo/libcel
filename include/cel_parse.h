@@ -3,6 +3,7 @@
 */
 
 #include <stddef.h>
+#include "cel_types.h"
 
 #ifndef _CEL_PARSE_H_
 #define _CEL_PARSE_H_
@@ -16,6 +17,12 @@ CEL_Parse_Init(
 void
 CEL_Parse_Free(
   CEL_PARSE_CONTEXT **ctx);
+
+CEL_RC
+CEL_Parse_Get_RECNUM(
+  CEL_PARSE_CONTEXT *ctx,
+  TPM2_HANDLE pcr,
+  RECNUM *recnum);
 
 CEL_RC
 CEL_Parse_UEFI_EventHeader(
