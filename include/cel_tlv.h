@@ -2,7 +2,7 @@
    SPDX-License-Identifier: GPL-3.0-or-later
 */
 
-#include <cel_types.h>
+#include "cel_types.h"
 
 #ifndef _CEL_TLV_H_
 #define _CEL_TLV_H_
