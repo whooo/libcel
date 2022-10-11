@@ -96,6 +96,7 @@ CEL_Parse_UEFI_Event(
     return r;
   }
 
+  event->digests.count = 0;
   for (uint32_t i=0;i < num_digs;i++) {
     r = get_le_uint16(buffer, len, &off, &alg);
     if (r) {
