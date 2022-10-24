@@ -4,13 +4,22 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/queue.h>
 #include "cel_types.h"
 #include "cel_io.h"
 
 
+struct pair_entry {
+  TPM2_HANDLE handle;
+  RECNUM recnum;
+  SLIST_ENTRY(pair_entry) entries;
+};
+
+SLIST_HEAD(pairhead, pair_entry);
+
 typedef struct CEL_PARSE_CONTEXT CEL_PARSE_CONTEXT;
 struct CEL_PARSE_CONTEXT {
-  UINT64 seqnums[TPM2_MAX_PCRS];
+  struct pairhead head;
 };
 
 
@@ -18,12 +27,25 @@ CEL_RC
 CEL_Parse_Init(
   CEL_PARSE_CONTEXT **ctx)
 {
+  struct pair_entry *p = NULL;
   *ctx = malloc(sizeof(CEL_PARSE_CONTEXT));
   if (!*ctx) {
     return 1;
   }
 
   memset(*ctx, 0, sizeof(CEL_PARSE_CONTEXT));
+
+  SLIST_INIT(&(*ctx)->head);
+
+  for (TPM2_HANDLE pcr=(TPM2_MAX_PCRS-1);pcr < TPM2_MAX_PCRS;pcr--) {
+    p = malloc(sizeof(struct pair_entry));
+    if (!p) {
+      return 1;
+    }
+    p->handle = pcr;
+    p->recnum = 0;
+    SLIST_INSERT_HEAD(&(*ctx)->head, p, entries);
+  }
 
   return 0;
 }
@@ -32,30 +54,53 @@ void
 CEL_Parse_Free(
   CEL_PARSE_CONTEXT **ctx)
 {
+  struct pair_entry *p = NULL;
+
+  if (!*ctx) {
+    return;
+  }
+
+  while (!SLIST_EMPTY(&(*ctx)->head)) {
+    p = SLIST_FIRST(&(*ctx)->head);
+    SLIST_REMOVE_HEAD(&(*ctx)->head, entries);
+    free(p);
+  }
+
   free(*ctx);
   *ctx = NULL;
-}
-
-UINT64 get_seqnum(
-  CEL_PARSE_CONTEXT *ctx, UINT32 pcr)
-{
-  return ctx->seqnums[pcr]++;
 }
 
 CEL_RC
 CEL_Parse_Get_RECNUM(
   CEL_PARSE_CONTEXT *ctx,
-  TPM2_HANDLE pcr,
+  TPM2_HANDLE handle,
   RECNUM *recnum)
 {
+  struct pair_entry *p = NULL;
+
   CHECK_NULL(ctx);
   CHECK_NULL(recnum);
 
-  if (pcr >= TPM2_MAX_PCRS) {
+  if (handle >= TPM2_MAX_PCRS) {
     return CEL_RC_INVALID_VALUE;
   }
 
-  *recnum = get_seqnum(ctx, pcr);
+  SLIST_FOREACH(p, &ctx->head, entries) {
+    if (p->handle == handle) {
+      *recnum = p->recnum++;
+      return CEL_RC_SUCCESS;
+    }
+  }
+
+  p = malloc(sizeof(struct pair_entry));
+  if (!p) {
+    return 1;
+  }
+
+  p->handle = handle;
+  p->recnum = 0;
+  SLIST_INSERT_HEAD(&ctx->head, p, entries);
+  *recnum = p->recnum;
 
   return CEL_RC_SUCCESS;
 }
@@ -84,7 +129,10 @@ CEL_Parse_UEFI_Event(
     return r;
   }
 
-  event->recnum = get_seqnum(ctx, event->pcr);
+  r = CEL_Parse_Get_RECNUM(ctx, event->pcr, &event->recnum);
+  if (r) {
+    return r;
+  }
 
   r = get_le_uint32(buffer, len, &off, &event->content.pcclient_std.event_type);
   if (r) {
@@ -153,7 +201,10 @@ CEL_Parse_UEFI_EventHeader(
     return r;
   }
 
-  event->recnum = get_seqnum(ctx, event->pcr);
+  r = CEL_Parse_Get_RECNUM(ctx, event->pcr, &event->recnum);
+  if (r) {
+    return r;
+  }
 
   r = get_le_uint32(buffer, len, &off, &event->content.pcclient_std.event_type);
   if (r) {
