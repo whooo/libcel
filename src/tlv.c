@@ -86,6 +86,22 @@ get_tl_with_type(
   return CEL_RC_SUCCESS;
 }
 
+int
+is_nv_index(TPM2_HANDLE handle) {
+  if ((handle & 0xFF000000) == 0x20000000) {
+    return 1;
+  }
+  return 0;
+}
+
+int
+is_pcr(TPM2_HANDLE handle) {
+  if (handle < TPM2_MAX_PCRS) {
+    return 1;
+  }
+  return 0;
+}
+
 CEL_RC
 CEL_TLV_UINT64_Marshal(
   CEL_TYPE type,
@@ -515,10 +531,12 @@ CEL_TLV_TPMS_CEL_EVENT_Marshal(
     return r;
   }
 
-  if (src->nv_index) {
+  if (is_nv_index(src->nv_index)) {
     r = CEL_TLV_NV_INDEX_Marshal(src->nv_index, buffer, len, &off);
-  } else {
+  } else if (is_pcr(src->pcr)) {
     r = CEL_TLV_PCR_Marshal(src->pcr, buffer, len, &off);
+  } else {
+    return CEL_RC_INVALID_VALUE;
   }
   if (r) {
     return r;

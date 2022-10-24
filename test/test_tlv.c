@@ -818,7 +818,6 @@ void test_tlv_tpms_cel_event(void **state) {
 
   event.recnum = 2;
   event.pcr = 3;
-  event.nv_index = 0;
   event.digests.count = 0;
   event.content_type = CEL_TYPE_MGMT;
   event.content.celmgt.count = 1;
@@ -842,7 +841,7 @@ void test_tlv_tpms_cel_event(void **state) {
 
   // test unsupported type
   off = 0;
-  event.nv_index = 1234;
+  event.nv_index = 0x20001234;
   event.content_type = 255;
   r = CEL_TLV_TPMS_CEL_EVENT_Marshal(&event, buffer, 220, &off);
   assert_int_equal(r, CEL_RC_INVALID_TYPE);

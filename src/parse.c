@@ -124,12 +124,12 @@ CEL_Parse_UEFI_Event(
 
   event->content_type = CEL_TYPE_PCCLIENT_STD;
 
-  r = get_le_uint32(buffer, len, &off, &event->pcr);
+  r = get_le_uint32(buffer, len, &off, &event->handle);
   if (r) {
     return r;
   }
 
-  r = CEL_Parse_Get_RECNUM(ctx, event->pcr, &event->recnum);
+  r = CEL_Parse_Get_RECNUM(ctx, event->handle, &event->recnum);
   if (r) {
     return r;
   }
@@ -196,12 +196,12 @@ CEL_Parse_UEFI_EventHeader(
 
   event->content_type = CEL_TYPE_PCCLIENT_STD;
 
-  r = get_le_uint32(buffer, len, &off, &event->pcr);
+  r = get_le_uint32(buffer, len, &off, &event->handle);
   if (r) {
     return r;
   }
 
-  r = CEL_Parse_Get_RECNUM(ctx, event->pcr, &event->recnum);
+  r = CEL_Parse_Get_RECNUM(ctx, event->handle, &event->recnum);
   if (r) {
     return r;
   }
@@ -253,7 +253,7 @@ CEL_Parse_IMA_TEMPLATE_Event(
 
   event->content_type = CEL_TYPE_IMA_TEMPLATE;
 
-  r = get_le_uint32(buffer, len, &off, &event->pcr);
+  r = get_le_uint32(buffer, len, &off, &event->handle);
   if (r) {
     return r;
   }
