@@ -30,7 +30,7 @@ CEL_Parse_Init(
   struct pair_entry *p = NULL;
   *ctx = malloc(sizeof(CEL_PARSE_CONTEXT));
   if (!*ctx) {
-    return 1;
+    return CEL_RC_MEMORY;
   }
 
   memset(*ctx, 0, sizeof(CEL_PARSE_CONTEXT));
@@ -40,7 +40,7 @@ CEL_Parse_Init(
   for (TPM2_HANDLE pcr=(TPM2_MAX_PCRS-1);pcr < TPM2_MAX_PCRS;pcr--) {
     p = malloc(sizeof(struct pair_entry));
     if (!p) {
-      return 1;
+      return CEL_RC_MEMORY;
     }
     p->handle = pcr;
     p->recnum = 0;
@@ -94,7 +94,7 @@ CEL_Parse_Get_RECNUM(
 
   p = malloc(sizeof(struct pair_entry));
   if (!p) {
-    return 1;
+    return CEL_RC_MEMORY;
   }
 
   p->handle = handle;
