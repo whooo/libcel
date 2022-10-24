@@ -1,0 +1,36 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: install depdencies
+        run: sudo apt install -y meson ninja-build libtss2-dev libcmocka-dev
+      - name: meson setup
+        run: meson setup builddir/
+      - name: meson test
+        run: meson test -C builddir/ -v
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: install depdencies
+        run: sudo apt install -y meson ninja-build libtss2-dev libcmocka-dev gcovr lcov
+      - name: meson setup
+        run: meson setup -Db_coverage=true builddir/
+      - name: meson test
+        run: meson test -C builddir/ -v
+      - name: meson coverage
+        run: ninja coverage -C builddir/
+      - name: coverage report
+        uses: zgosalvez/github-actions-report-lcov@v1
+        with:
+          coverage-files: builddir/meson-logs/coverage.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
