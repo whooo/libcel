@@ -109,8 +109,11 @@ union TPMU_EVENT_CONTENT {
 typedef struct TPMS_CEL_EVENT TPMS_CEL_EVENT;
 struct TPMS_CEL_EVENT {
   RECNUM recnum;
-  TPMI_DH_PCR pcr;
-  TPMI_RH_NV_INDEX nv_index;
+  union {
+    TPMI_DH_PCR pcr;
+    TPMI_RH_NV_INDEX nv_index;
+    TPM2_HANDLE handle;
+  };
   TPML_DIGEST_VALUES digests;
   TPMI_CEL_CONTENT_TYPE content_type;
   TPMU_EVENT_CONTENT content;
