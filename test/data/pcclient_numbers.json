@@ -1,0 +1,9 @@
+{
+    "recnum": 12,
+    "pcr": 9,
+    "content_type": 5,
+    "content": {
+	"event_type": 3,
+	"event_data": "aabbccdd"
+    }
+}

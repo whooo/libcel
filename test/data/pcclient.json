@@ -1,0 +1,9 @@
+{
+    "recnum": 12,
+    "pcr": 9,
+    "content_type": "pcclient_std",
+    "content": {
+	"event_type": "ev_no_action",
+	"event_data": "aabbccdd"
+    }
+}

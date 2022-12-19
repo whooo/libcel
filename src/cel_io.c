@@ -202,3 +202,19 @@ get_be_uint32(
   return CEL_RC_SUCCESS;
 }
 
+int
+is_nv_index(TPM2_HANDLE handle) {
+  if ((handle & 0xFF000000) == 0x20000000) {
+    return 1;
+  }
+  return 0;
+}
+
+int
+is_pcr(TPM2_HANDLE handle) {
+  if (handle < TPM2_MAX_PCRS) {
+    return 1;
+  }
+  return 0;
+}
+

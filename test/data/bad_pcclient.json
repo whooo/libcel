@@ -1,0 +1,61 @@
+{
+    "missing_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_data": "aa"
+	}
+    },
+    "large_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": 4294967296
+	}
+    },
+    "bad_type_str": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": "bad"
+	}
+    },
+    "bad_type_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": []
+	}
+    },
+    "missing_data": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": "ev_no_action"
+	}
+    },
+    "bad_data_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": "ev_no_action",
+	    "event_data": []
+	}
+    },
+    "bad_hex": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "pcclient_std",
+	"content": {
+	    "event_type": "ev_no_action",
+	    "event_data": "xxxx"
+	}
+    },
+
+}

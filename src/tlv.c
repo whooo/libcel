@@ -86,22 +86,6 @@ get_tl_with_type(
   return CEL_RC_SUCCESS;
 }
 
-int
-is_nv_index(TPM2_HANDLE handle) {
-  if ((handle & 0xFF000000) == 0x20000000) {
-    return 1;
-  }
-  return 0;
-}
-
-int
-is_pcr(TPM2_HANDLE handle) {
-  if (handle < TPM2_MAX_PCRS) {
-    return 1;
-  }
-  return 0;
-}
-
 CEL_RC
 CEL_TLV_UINT64_Marshal(
   CEL_TYPE type,

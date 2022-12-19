@@ -1,0 +1,47 @@
+{
+    "missing_major": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "cel_version",
+	    "data": {
+		"minor": 456
+	    }
+	}
+    },
+    "missing_minor": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "cel_version",
+	    "data": {
+		"major": 123
+	    }
+	}
+    },
+    "large_major": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "cel_version",
+	    "data": {
+		"major": 65536
+	    }
+	}
+    },
+    "large_minor": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "cel_version",
+	    "data": {
+		"major": 123,
+		"minor": 65536
+	    }
+	}
+    }
+}

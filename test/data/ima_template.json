@@ -1,0 +1,9 @@
+{
+    "recnum": 9,
+    "pcr": 12,
+    "content_type": "ima_template",
+    "content": {
+	"template_name": "name",
+	"template_data": "aabbccdd"
+    }
+}

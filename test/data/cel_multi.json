@@ -1,0 +1,18 @@
+{
+    "nv_index": 2,
+    "recnum": 4,
+    "content_type": "cel",
+    "content": [
+	{
+	    "type": "firmware_end",
+	},
+	{
+	    "type": "cel_timestamp",
+	    "data": 1234567890,
+	},
+	{
+	    "type": "state_trans",
+	    "data": "kexec",
+	},
+    ],
+}

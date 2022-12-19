@@ -64,6 +64,12 @@ get_be_uint32(
   size_t *offset,
   UINT32 *dest);
 
+int
+is_nv_index(TPM2_HANDLE handle);
+
+int
+is_pcr(TPM2_HANDLE handle);
+
 #define CHECK_NULL(x) if (!x) { return CEL_RC_BAD_REFERENCE; }
 
 #endif

@@ -1,0 +1,69 @@
+{
+    "missing_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	}
+    },
+    "large_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": 256
+	}
+    },
+    "bad_type_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": []
+	}
+    },
+    "bad_type_string": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "bad"
+	}
+    },
+    "missing_data": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "cel_version"
+	}
+    },
+    "bad_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": 255,
+	    "data": {}
+	}
+    },
+    "bad_content": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": "bad"
+    },
+    "bad_type_multi": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": [
+	    {
+		"type": "firmware_end"
+	    },
+	    {
+		"type": "bad"
+	    }
+	]
+    }
+}
