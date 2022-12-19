@@ -1,0 +1,29 @@
+{
+    "large_state_trans": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "state_trans",
+	    "data": 4294967296
+	}
+    },
+    "bad_state_trans_str": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "state_trans",
+	    "data": "bad"
+	}
+    },
+    "bad_state_trans_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel",
+	"content": {
+	    "type": "state_trans",
+	    "data": []
+	}
+    }
+}

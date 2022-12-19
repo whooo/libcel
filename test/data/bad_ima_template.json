@@ -1,0 +1,52 @@
+{
+    "missing_name": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_data": "aa"
+	}
+    },
+    "bad_name_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_name": [],
+	}
+    },
+    "large_name": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_name": "" // set in unit test
+	}
+    },
+    "missing_data": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_name": "name"
+	}
+    },
+    "bad_data_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_name": "name",
+	    "template_data": []
+	}
+    },
+    "bad_hex": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "ima_template",
+	"content": {
+	    "template_name": "name",
+	    "template_data": "xxx",
+	}
+    }
+}

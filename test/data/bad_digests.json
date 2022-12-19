@@ -1,0 +1,98 @@
+{
+    "not_array": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": "bad"
+    },
+    "not_object": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    "bad"
+	]
+    },
+    "bad_hashalg_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": []
+	    }
+	]
+    },
+    "bad_hashalg_value": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": 1234
+	    }
+	]
+    },
+    "bad_hashalg_string": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": "bad"
+	    }
+	]
+    },
+    "bad_digest_len": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": "sha256",
+		"digest": "aa"
+	    }
+	]
+    },
+    "digest_not_hex": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": "sha1",
+		"digest": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+	    }
+	]
+    },
+    "missing_digest": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": "sha1"
+	    }
+	]
+    },
+    "bad_digest_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": "sha1",
+		"digest": []
+	    }
+	]
+    },
+    "missing_hashalg": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"digest": []
+	    }
+	]
+    },
+    "large_hashalg": {
+	"recnum": 1,
+	"pcr": 2,
+	"digests": [
+	    {
+		"hashAlg": 65536
+	    }
+	]
+    }
+}

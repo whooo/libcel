@@ -1,0 +1,32 @@
+{
+    "missing_type": {
+	"recnum": 1,
+	"pcr": 2
+    },
+    "large_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": 256
+    },
+    "bad_type_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": []
+    },
+    "missing_content": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "cel"
+    },
+    "bad_type_str": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": "bad"
+    },
+    "bad_type": {
+	"recnum": 1,
+	"pcr": 2,
+	"content_type": 255,
+	"content": {}
+    }
+}

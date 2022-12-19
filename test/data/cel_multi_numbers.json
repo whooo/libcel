@@ -1,0 +1,31 @@
+{
+    "nv_index": 10,
+    "recnum": 20,
+    "content_type": 4,
+    "content": [
+	{
+	    "type": 2,
+	},
+	{
+	    "type": 80,
+	    "data": 1234567890,
+	},
+	{
+	    "type": 81,
+	    "data": 2,
+	},
+	{
+	    "type": 1,
+	    "data": {
+		"major": 123,
+		"minor": 456,
+	    }
+	},
+    ],
+    "digests": [
+	{
+	    "hashAlg": 4,
+	    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	},
+    ],
+}

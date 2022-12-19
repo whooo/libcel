@@ -1,0 +1,18 @@
+{
+    "pcr": 3,
+    "recnum": 6,
+    "content_type": "cel",
+    "digests": [
+	{
+	    "hashAlg": "sha1",
+	    "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+	},
+    ],
+    "content": {
+	"type": "cel_version",
+	"data": {
+	    "major": 123,
+	    "minor": 456,
+	}
+    },
+}
