@@ -258,6 +258,11 @@ CEL_Parse_IMA_TEMPLATE_Event(
     return r;
   }
 
+  r = CEL_Parse_Get_RECNUM(ctx, event->handle, &event->recnum);
+  if (r) {
+    return r;
+  }
+
   r = get_bytes(buffer,
 		len,
 		&off,
