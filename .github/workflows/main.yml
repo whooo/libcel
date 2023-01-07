@@ -9,7 +9,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: install depdencies
-        run: sudo apt install -y meson ninja-build libtss2-dev libjson-c-dev libcmocka-dev
+        run: sudo apt install -y meson ninja-build libtss2-dev libjson-c-dev libcmocka-dev libssl-dev
       - name: meson setup
         run: meson setup builddir/
       - name: meson test
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: install depdencies
-        run: sudo apt install -y meson ninja-build libtss2-dev libjson-c-dev libcmocka-dev gcovr lcov
+        run: sudo apt install -y meson ninja-build libtss2-dev libjson-c-dev libcmocka-dev libssl-dev gcovr lcov
       - name: meson setup
         run: meson setup -Db_coverage=true builddir/
       - name: meson test

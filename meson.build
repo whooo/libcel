@@ -9,7 +9,7 @@ project(
 )
 dependencies = [dependency('tss2-mu')]
 json_dep = dependency('json-c')
-test_dep = [dependency('cmocka')]
+test_dep = [dependency('cmocka'), dependency('libcrypto')]
 json_test_dep = [dependency('cmocka'), dependency('json-c')]
 
 inc = include_directories('include')
