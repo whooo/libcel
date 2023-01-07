@@ -103,7 +103,7 @@ CEL_Parse_Get_RECNUM(
   p->handle = handle;
   p->recnum = 0;
   SLIST_INSERT_HEAD(&ctx->head, p, entries);
-  *recnum = p->recnum;
+  *recnum = p->recnum++;
 
   return CEL_RC_SUCCESS;
 }
