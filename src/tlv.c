@@ -395,6 +395,18 @@ CEL_TLV_BYTEBUFFER_Marshal(
 }
 
 CEL_RC
+CEL_TLV_STRING_Marshal(
+  CEL_TYPE type,
+  const char *src,
+  uint8_t *buffer,
+  size_t len,
+  size_t *offset)
+{
+  size_t slen = strlen(src);
+  return put_tlv(type, slen, src, buffer, len, offset);
+}
+
+CEL_RC
 CEL_TLV_TPMS_EVENT_PCCLIENT_STD_Marshal(
   const TPMS_EVENT_PCCLIENT_STD *src,
   uint8_t *buffer,
@@ -457,11 +469,11 @@ CEL_TLV_TPMS_EVENT_IMA_TEMPLATE_Marshal(
 
   CHECK_NULL(src);
 
-  CEL_TLV_BYTEBUFFER_Marshal(CEL_TYPE_IMA_TEMPLATE_NAME,
-			     &src->template_name,
-			     NULL,
-			     0,
-			     &suboff);
+  CEL_TLV_STRING_Marshal(CEL_TYPE_IMA_TEMPLATE_NAME,
+			 src->template_name,
+			 NULL,
+			 0,
+			 &suboff);
   CEL_TLV_BYTEBUFFER_Marshal(CEL_TYPE_IMA_TEMPLATE_DATA,
 			     &src->template_data,
 			     NULL,
@@ -473,11 +485,11 @@ CEL_TLV_TPMS_EVENT_IMA_TEMPLATE_Marshal(
     return r;
   }
 
-  r = CEL_TLV_BYTEBUFFER_Marshal(CEL_TYPE_IMA_TEMPLATE_NAME,
-				 &src->template_name,
-				 buffer,
-				 len,
-				 &off);
+  r = CEL_TLV_STRING_Marshal(CEL_TYPE_IMA_TEMPLATE_NAME,
+			     src->template_name,
+			     buffer,
+			     len,
+			     &off);
   if (r) {
     return r;
   }
@@ -1002,6 +1014,39 @@ CEL_TLV_BYTEBUFFER_Unmarshal(
 }
 
 CEL_RC
+CEL_TLV_STRING_Unmarshal(
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset,
+  CEL_TYPE type,
+  char *dest,
+  size_t size)
+{
+  CEL_RC r;
+  UINT32 data_len;
+  size_t off = get_offset(offset);
+
+  CHECK_NULL(buffer);
+  CHECK_NULL(dest);
+
+  r = get_tl_with_type(buffer, len, &off, type, &data_len);
+  if (r) {
+    return r;
+  }
+  if (data_len >= size) {
+    return CEL_RC_VALUE_TOO_LARGE;
+  }
+
+  memcpy(dest, buffer + off, data_len);
+  dest[data_len] = '\x00';
+  off += data_len;
+
+  set_offset(offset, off);
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 CEL_TLV_TPMS_EVENT_PCCLIENT_STD_Unmarshal(
   const uint8_t *buffer,
   size_t len,
@@ -1132,10 +1177,11 @@ CEL_TLV_TPMS_EVENT_IMA_TEMPLATE_Unmarshal(
       break;
     case SetName:
       state = SetData;
-      r = CEL_TLV_BYTEBUFFER_Unmarshal(buffer + off,
-				       sublen, &suboff,
-				       CEL_TYPE_IMA_TEMPLATE_NAME,
-				       &dest->template_name);
+      r = CEL_TLV_STRING_Unmarshal(buffer + off,
+				   sublen, &suboff,
+				   CEL_TYPE_IMA_TEMPLATE_NAME,
+				   dest->template_name,
+				   sizeof(dest->template_name));
       break;
     case SetData:
       state = SetName;

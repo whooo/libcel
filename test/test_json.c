@@ -349,8 +349,7 @@ void test_json_ima_template(void **state) {
     .content_type = CEL_TYPE_IMA_TEMPLATE,
   };
 
-  event.content.ima_template.template_name.size = 7;
-  memcpy(event.content.ima_template.template_name.buffer, "falafel", 7);
+  memcpy(event.content.ima_template.template_name, "falafel\x00", 8);
   event.content.ima_template.template_data.size = 3;
   memset(event.content.ima_template.template_data.buffer, 0xCC, 3);
 
@@ -850,8 +849,7 @@ void test_json_unmarshal_ima_template(void **state) {
   assert_int_equal(event.handle, 12);
   assert_int_equal(event.recnum, 9);
   assert_int_equal(event.content_type, CEL_TYPE_IMA_TEMPLATE);
-  assert_int_equal(event.content.ima_template.template_name.size, 4);
-  assert_string_equal(event.content.ima_template.template_name.buffer, "name");
+  assert_string_equal(event.content.ima_template.template_name, "name");
   assert_int_equal(event.content.ima_template.template_data.size, 4);
   assert_memory_equal(event.content.ima_template.template_data.buffer, "\xAA\xBB\xCC\xDD", 4);
 }
@@ -880,10 +878,10 @@ void test_json_unmarshal_bad_ima_template(void **state) {
 
   hasit = json_object_object_get_ex(obj, "large_name", &jt);
   assert_true(hasit);
-  ls = malloc(sizeof(event.content.ima_template.template_name.buffer) + 1);
+  ls = malloc(sizeof(event.content.ima_template.template_name) + 1);
   assert_non_null(ls);
-  memset(ls, 'f', sizeof(event.content.ima_template.template_name.buffer));
-  ls[sizeof(event.content.ima_template.template_name.buffer) + 1] = '\x00';
+  memset(ls, 'f', sizeof(event.content.ima_template.template_name));
+  ls[sizeof(event.content.ima_template.template_name) + 1] = '\x00';
   js = json_get_value(jt, JSON_KEY, "content", JSON_KEY, "template_name", JSON_STRING);
   assert_non_null(js);
   json_object_set_string(js, ls);

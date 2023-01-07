@@ -133,8 +133,7 @@ void test_parse_ima(void **state) {
   assert_int_equal(event.recnum, 0);
   assert_int_equal(event.handle, 10);
   assert_int_equal(event.content_type, CEL_TYPE_IMA_TEMPLATE);
-  assert_int_equal(event.content.ima_template.template_name.size, 6);
-  assert_memory_equal(event.content.ima_template.template_name.buffer, "ima-ng", 6);
+  assert_string_equal(event.content.ima_template.template_name, "ima-ng");
   assert_int_equal(event.content.ima_template.template_data.size, 63);
   assert_int_equal(event.digests.count, 1);
   assert_int_equal(event.digests.digests[0].hashAlg, TPM2_ALG_SHA1);
