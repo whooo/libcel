@@ -84,7 +84,7 @@ CEL_Parse_Get_RECNUM(
   CHECK_NULL(ctx);
   CHECK_NULL(recnum);
 
-  if (handle >= TPM2_MAX_PCRS) {
+  if (!is_pcr(handle) && !is_nv_index(handle)) {
     return CEL_RC_INVALID_VALUE;
   }
 
