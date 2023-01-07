@@ -3,5 +3,4 @@ C library to handle the Canonical Event Log format as specified by https://trust
 
 # future work
 * Implement CBOR format
-* Find public UEFI and IMA logs for use with unit tests
 * Get in contact with specification authors for suggestions/clarifications
