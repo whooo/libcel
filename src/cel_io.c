@@ -112,6 +112,43 @@ get_uefi_bytebuffer(
 }
 
 CEL_RC
+get_string(
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset,
+  char *dst,
+  size_t size)
+{
+  CEL_RC r;
+  uint32_t slen;
+  size_t off = get_offset(offset);
+
+  CHECK_NULL(buffer);
+  CHECK_NULL(dst);
+
+  r = get_le_uint32(buffer, len, &off, &slen);
+  if (r) {
+    return r;
+  }
+
+  if (slen > size) {
+    return CEL_RC_VALUE_TOO_LARGE;
+  }
+
+  if (is_buffer_short(len, off, slen)) {
+    return CEL_RC_SHORT_BUFFER;
+  }
+
+  memcpy(dst, buffer + off, slen);
+
+  off += slen;
+
+  set_offset(offset, off);
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 get_bytes(
   const uint8_t *buffer,
   size_t len,

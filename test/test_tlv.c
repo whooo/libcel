@@ -601,8 +601,7 @@ void test_tlv_tpms_event_ima_template(void **state) {
     expected_buffer[TL_SIZE + 18] = "\x07\x00\x00\x00\x12\x00\x00\x00\x00\x04test\x01\x00\x00\x00\x04" "1234"
     ;
 
-  memcpy(ima.template_name.buffer, "test", 4);
-  ima.template_name.size = 4;
+  memcpy(ima.template_name, "test\x00", 5);
   memcpy(ima.template_data.buffer, "1234", 4);
   ima.template_data.size = 4;
 
@@ -631,8 +630,7 @@ void test_tlv_tpms_event_ima_template(void **state) {
   r = CEL_TLV_TPMS_EVENT_IMA_TEMPLATE_Unmarshal(buffer, TL_SIZE + 18, &off, &ima_out);
   assert_int_equal(r, 0);
   assert_int_equal(off, TL_SIZE + 18);
-  assert_int_equal(ima_out.template_name.size, 4);
-  assert_memory_equal(ima_out.template_name.buffer, "test", 4);
+  assert_string_equal(ima_out.template_name, "test");
   assert_int_equal(ima_out.template_data.size, 4);
   assert_memory_equal(ima_out.template_data.buffer, "1234", 4);
 

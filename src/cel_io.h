@@ -37,6 +37,14 @@ get_uefi_bytebuffer(
   BYTEBUFFER *dst);
 
 CEL_RC
+get_string(
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset,
+  char *dst,
+  size_t size);
+
+CEL_RC
 get_bytes(
   const uint8_t *buffer,
   size_t len,

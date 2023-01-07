@@ -204,12 +204,10 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Marshal(
   int jr;
   char *datahex = NULL;
   size_t hexlen;
-  const BYTEBUFFER *name = NULL;
   json_object *jt = NULL, *jf = NULL;
 
   CHECK_NULL(src);
   CHECK_NULL(obj);
-  name = &src->template_name;
 
   jt = json_object_new_object();
   if (!jt) {
@@ -217,7 +215,7 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Marshal(
     goto fail;
   }
 
-  jf = json_object_new_string_len((const char *) name->buffer, name->size);
+  jf = json_object_new_string(src->template_name);
   if (!jf) {
     r = CEL_RC_MEMORY;
     goto fail;
@@ -977,12 +975,11 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Unmarshal(
   }
   nstr = json_object_get_string(jn);
   len = strlen(nstr);
-  if (len > sizeof(dest->template_name.buffer) - 1) {
+  if (len > sizeof(dest->template_name) - 1) {
     return CEL_RC_SHORT_BUFFER;
   }
-  memcpy(dest->template_name.buffer, nstr, len);
-  dest->template_name.size = len;
-  dest->template_name.buffer[len] = '\x00';
+  memcpy(dest->template_name, nstr, len);
+  dest->template_name[len] = '\x00';
 
   hasit = json_object_object_get_ex(obj, "template_data", &jd);
   if (!hasit) {

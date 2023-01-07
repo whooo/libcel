@@ -63,7 +63,7 @@ typedef BYTEBUFFER IMA_TLV;
 
 typedef struct TPMS_EVENT_IMA_TEMPLATE TPMS_EVENT_IMA_TEMPLATE;
 struct TPMS_EVENT_IMA_TEMPLATE {
-  BYTEBUFFER template_name;
+  char template_name[255];
   BYTEBUFFER template_data;
 };
 

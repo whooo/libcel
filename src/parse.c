@@ -278,10 +278,14 @@ CEL_Parse_IMA_TEMPLATE_Event(
   event->digests.digests[0].hashAlg = TPM2_ALG_SHA1;
   event->digests.count = 1;
 
-  r = get_uefi_bytebuffer(buffer,
-			  len,
-			  &off,
-			  &event->content.ima_template.template_name);
+  memset(event->content.ima_template.template_name,
+	 0,
+	 sizeof(event->content.ima_template.template_name));
+  r = get_string(buffer,
+		len,
+		&off,
+		event->content.ima_template.template_name,
+		sizeof(event->content.ima_template.template_name) - 1);
   if (r) {
     return r;
   }
