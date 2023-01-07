@@ -28,6 +28,9 @@ CEL_Parse_Init(
   CEL_PARSE_CONTEXT **ctx)
 {
   struct pair_entry *p = NULL;
+
+  CHECK_NULL(ctx);
+
   *ctx = malloc(sizeof(CEL_PARSE_CONTEXT));
   if (!*ctx) {
     return CEL_RC_MEMORY;
@@ -56,7 +59,7 @@ CEL_Parse_Free(
 {
   struct pair_entry *p = NULL;
 
-  if (!*ctx) {
+  if (!ctx || !*ctx) {
     return;
   }
 
