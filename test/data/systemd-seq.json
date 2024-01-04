@@ -1,0 +1,4 @@
+{"pcr": 1, "digests": [], "content_type": "systemd", "content": {"eventType": "phase", "bootId": "fa1afe1fa1afe1fa1afe1fa1afe1ffff", "timestamp": 1, "string": "phase-tahini"}}
+{"pcr": 1, "digests": [], "content_type": "systemd", "content": {"eventType": "filesystem", "bootId": "fa1afe1fa1afe1fa1afe1fa1afe1ffff", "timestamp": 2, "string": "filesystem-tahini"}}
+{"pcr": 1, "digests": [], "content_type": "systemd", "content": {"eventType": "machine-id", "bootId": "fa1afe1fa1afe1fa1afe1fa1afe1ffff", "timestamp": 3, "string": "machine-id-tahini"}}
+{"pcr": 1, "digests": [], "content_type": "systemd", "content": {"eventType": "volume-key", "bootId": "fa1afe1fa1afe1fa1afe1fa1afe1ffff", "timestamp": 4, "string": "volume-key-tahini"}}

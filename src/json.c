@@ -9,7 +9,7 @@
 #include "cel_types.h"
 #include "cel_json.h"
 #include "cel_io.h"
-
+#include "cel_json_utils.h"
 
 CEL_RC
 CEL_JSON_TPMT_HA_Marshal(
@@ -20,8 +20,8 @@ CEL_JSON_TPMT_HA_Marshal(
   CEL_RC r;
   int jr;
   size_t diglen = 0;
-  const char *algstr = NULL; char hexdig[MAX_DIGEST_HEX + 1];
-  json_object *jd = NULL, *ja = NULL, *jh = NULL;
+  const char *algstr = NULL;
+  json_object *jd = NULL, *ja = NULL;
 
   CHECK_NULL(src);
   CHECK_NULL(obj);
@@ -58,19 +58,8 @@ CEL_JSON_TPMT_HA_Marshal(
     r = CEL_RC_UNSUPPORTED_DIGEST;
     goto fail;
   }
-  r = hexlify(src->digest.sha512, diglen, hexdig, MAX_DIGEST_HEX + 1);
+  r = put_json_hex_string(jd, "digest", src->digest.sha512, diglen);
   if (r) {
-    goto fail;
-  }
-
-  jh = json_object_new_string(hexdig);
-  if (!jh) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-  r = json_object_object_add(jd, "digest", jh);
-  if (r) {
-    r = CEL_RC_MEMORY;
     goto fail;
   }
 
@@ -127,8 +116,6 @@ CEL_JSON_TPMS_EVENT_PCCLIENT_STD_Marshal(
   CEL_RC r;
   int jr;
   const char *event_str = NULL;
-  char *eventhex = NULL;
-  size_t hexlen = 0;
   json_object *je = NULL, *jf = NULL;;
 
   CHECK_NULL(src);
@@ -160,37 +147,17 @@ CEL_JSON_TPMS_EVENT_PCCLIENT_STD_Marshal(
     goto fail;
   }
 
-  hexlen = (src->event_data.size * 2) + 1;
-  eventhex = malloc(hexlen);
-  if (!eventhex) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-
-  r = hexlify(src->event_data.buffer,
-	      src->event_data.size,
-	      eventhex, hexlen);
+  r = put_json_hex_string(je,
+			  "event_data",
+			  src->event_data.buffer,
+			  src->event_data.size);
   if (r) {
     goto fail;
   }
 
-  jf = json_object_new_string(eventhex);
-  if (!jf) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-
-  jr = json_object_object_add(je, "event_data", jf);
-  if (jr) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-
-  free(eventhex);
   *obj = je;
   return CEL_RC_SUCCESS;
  fail:
-  free(eventhex);
   json_object_put(je);
   return r;
 }
@@ -202,8 +169,6 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Marshal(
 {
   CEL_RC r;
   int jr;
-  char *datahex = NULL;
-  size_t hexlen;
   json_object *jt = NULL, *jf = NULL;
 
   CHECK_NULL(src);
@@ -227,35 +192,17 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Marshal(
     goto fail;
   }
 
-  hexlen = (src->template_data.size * 2) + 1;
-  datahex = malloc(hexlen);
-  if (!datahex) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-  r = hexlify(src->template_data.buffer,
-	      src->template_data.size,
-	      datahex,
-	      hexlen);
+  r = put_json_hex_string(jt,
+			  "template_data",
+			  src->template_data.buffer,
+			  src->template_data.size);
   if (r) {
-    goto fail;
-  }
-  jf = json_object_new_string(datahex);
-  if (!jf) {
-    r = CEL_RC_MEMORY;
-    goto fail;
-  }
-  free(datahex);
-  jr = json_object_object_add(jt, "template_data", jf);
-  if (jr) {
-    r = CEL_RC_MEMORY;
     goto fail;
   }
 
   *obj = jt;
   return CEL_RC_SUCCESS;
  fail:
-  free(datahex);
   json_object_put(jt);
   return r;
 }
@@ -448,6 +395,81 @@ CEL_JSON_TPML_EVENT_CELMGT_Marshal(
 }
 
 CEL_RC
+CEL_JSON_TPMS_EVENT_SYSTEMD_Marshal(
+  const TPMS_EVENT_SYSTEMD *src,
+  json_object **obj,
+  CEL_JSON_FLAGS flags)
+{
+  CEL_RC r;
+  int jr;
+  const char *event_str = NULL;
+  json_object *je = NULL, *jf = NULL;
+
+  CHECK_NULL(src);
+  CHECK_NULL(obj);
+
+  je = json_object_new_object();
+  if (!je) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+
+  if (flags & CEL_JSON_FLAGS_USE_NUMBERS) {
+    jf = json_object_new_uint64(src->event_type);
+  } else {
+    event_str = systemd_event_to_str(src->event_type);
+    if (!event_str) {
+      r = CEL_RC_INVALID_TYPE;
+      goto fail;
+    }
+    jf = json_object_new_string(event_str);
+  }
+  if (!jf) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+  jr = json_object_object_add(je, "event_type", jf);
+  if (jr) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+
+  jf = json_object_new_string_len((const char *) src->string.buffer,
+				  src->string.size);
+  if (!jf) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+  jr = json_object_object_add(je, "string", jf);
+  if (jr) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+
+  r = put_json_hex_string(je, "bootId", src->boot_id, sizeof(src->boot_id));
+  if (r) {
+    goto fail;
+  }
+
+  jf = json_object_new_uint64(src->timestamp);
+  if (!jf) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+  jr = json_object_object_add(je, "timestamp", jf);
+  if (jr) {
+    r = CEL_RC_MEMORY;
+    goto fail;
+  }
+
+  *obj = je;
+  return CEL_RC_SUCCESS;
+ fail:
+  json_object_put(je);
+  return r;
+}
+
+CEL_RC
 CEL_JSON_TPMS_CEL_EVENT_Marshal(
   const TPMS_CEL_EVENT *src,
   json_object **obj,
@@ -541,6 +563,9 @@ CEL_JSON_TPMS_CEL_EVENT_Marshal(
   case CEL_TYPE_IMA_TEMPLATE:
     r = CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Marshal(&cont->ima_template, &jf);
     break;
+  case CEL_TYPE_SYSTEMD:
+    r = CEL_JSON_TPMS_EVENT_SYSTEMD_Marshal(&cont->systemd, &jf, flags);
+    break;
   default:
     r = CEL_RC_INVALID_TYPE;
   }
@@ -559,60 +584,6 @@ CEL_JSON_TPMS_CEL_EVENT_Marshal(
  fail:
   json_object_put(jo);
   return r;
-}
-
-CEL_RC
-get_json_number(
-  const json_object *obj,
-  const char *key,
-  uint64_t *dest)
-{
-  json_object *ji = NULL;
-
-  CHECK_NULL(obj);
-  CHECK_NULL(key);
-  CHECK_NULL(dest);
-
-  ji = json_object_object_get(obj, key);
-  if (!ji) {
-    return CEL_RC_INVALID_VALUE;
-  }
-
-  if (!json_object_is_type(ji, json_type_int)) {
-    return CEL_RC_INVALID_TYPE;
-  }
-
-  *dest = json_object_get_uint64(ji);
-  return CEL_RC_SUCCESS;
-}
-
-CEL_RC
-get_json_handle(
-  const json_object *obj,
-  TPM2_HANDLE *dest)
-{
-  uint64_t ti;
-  json_object *ji = NULL;
-
-  CHECK_NULL(obj);
-  CHECK_NULL(dest);
-
-  if (!json_object_object_get_ex(obj, "pcr", &ji) &&
-      !json_object_object_get_ex(obj, "nv_index", &ji)) {
-    return CEL_RC_INVALID_VALUE;
-  }
-
-  if (!json_object_is_type(ji, json_type_int)) {
-    return CEL_RC_INVALID_TYPE;
-  }
-
-  ti = json_object_get_uint64(ji);
-  if (ti > UINT32_MAX) {
-    return CEL_RC_INVALID_VALUE;
-  }
-
-  *dest = ti;
-  return CEL_RC_SUCCESS;
 }
 
 CEL_RC
@@ -1002,15 +973,71 @@ CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Unmarshal(
 }
 
 CEL_RC
+CEL_JSON_TPMS_EVENT_SYSTEMD_Unmarshal(
+  const json_object *obj,
+  TPMS_EVENT_SYSTEMD *dest)
+{
+  CEL_RC r;
+  int hasit;
+  json_object *jt = NULL;
+  const char *ts = NULL;
+  uint64_t ti = -1;
+
+  r = get_json_bytebuffer(obj, "string", &dest->string);
+  if (r) {
+    return r;
+  }
+
+  r = get_json_hex_string_full(obj,
+			       "bootId", (uint8_t *) &dest->boot_id,
+			       sizeof(dest->boot_id));
+  if (r) {
+    return r;
+  }
+
+  r = get_json_number(obj, "timestamp", &dest->timestamp);
+  if (r) {
+    return r;
+  }
+
+  hasit = json_object_object_get_ex(obj, "eventType", &jt);
+  if (!hasit) {
+    return CEL_RC_INVALID_VALUE;
+  }
+
+  switch (json_object_get_type(jt)) {
+  case json_type_int:
+    ti = json_object_get_uint64(jt);
+    if (ti > UINT8_MAX) {
+      return CEL_RC_INVALID_VALUE;
+    }
+    if (!systemd_event_to_str(ti)) {
+      return CEL_RC_INVALID_TYPE;
+    }
+    dest->event_type = ti;
+    break;
+  case json_type_string:
+    ts = json_object_get_string(jt);
+    r = str_to_systemd_event(ts, &dest->event_type);
+    if (r) {
+      return r;
+    }
+    break;
+  default:
+    return CEL_RC_INVALID_TYPE;
+  }
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 CEL_JSON_TPMS_CEL_EVENT_Unmarshal(
   const json_object *obj,
   TPMS_CEL_EVENT *dest)
 {
   CEL_RC r;
   int hasit;
-  uint64_t ti;
-  const char *ts = NULL;
-  json_object *jd = NULL, *jt = NULL, *jc = NULL;
+  json_object *jd = NULL, *jc = NULL;
   TPMU_EVENT_CONTENT *cont = NULL;
 
   CHECK_NULL(obj);
@@ -1037,28 +1064,9 @@ CEL_JSON_TPMS_CEL_EVENT_Unmarshal(
     dest->digests.count = 0;
   }
 
-  hasit = json_object_object_get_ex(obj, "content_type", &jt);
-  if (!hasit) {
-    return CEL_RC_INVALID_VALUE;
-  }
-
-  switch (json_object_get_type(jt)) {
-  case json_type_int:
-    ti = json_object_get_uint64(jt);
-    if (ti > UINT8_MAX) {
-      return CEL_RC_INVALID_VALUE;
-    }
-    dest->content_type = ti;
-    break;
-  case json_type_string:
-    ts = json_object_get_string(jt);
-    r = str_to_content_type(ts, &dest->content_type);
-    if (r) {
-      return r;
-    }
-    break;
-  default:
-    return CEL_RC_INVALID_TYPE;
+  r = get_json_content_type(obj, &dest->content_type);
+  if (r) {
+    return r;
   }
 
   hasit = json_object_object_get_ex(obj, "content", &jc);
@@ -1075,6 +1083,9 @@ CEL_JSON_TPMS_CEL_EVENT_Unmarshal(
     break;
   case CEL_TYPE_IMA_TEMPLATE:
     r = CEL_JSON_TPMS_EVENT_IMA_TEMPLATE_Unmarshal(jc, &cont->ima_template);
+    break;
+  case CEL_TYPE_SYSTEMD:
+    r = CEL_JSON_TPMS_EVENT_SYSTEMD_Unmarshal(jc, &cont->systemd);
     break;
   default:
     return CEL_RC_INVALID_TYPE;

@@ -382,6 +382,9 @@ void test_json_bad_types(void **state) {
   event.content_type = 0xFF;
   r = CEL_JSON_TPMS_CEL_EVENT_Marshal(&event, &obj, 0);
   assert_int_equal(r, CEL_RC_INVALID_TYPE);
+  r = CEL_JSON_TPMS_CEL_EVENT_Marshal(&event, &obj, CEL_JSON_FLAGS_USE_NUMBERS);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+
   event.content_type = CEL_TYPE_MGMT;
 
   event.content.celmgt.count = 1;
@@ -953,6 +956,204 @@ void test_json_unmarshal_bad_event(void **state) {
   assert_int_equal(r, CEL_RC_BAD_REFERENCE);
 }
 
+void test_json_systemd(void **state) {
+  (void) state;
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event = {
+    .recnum = 1234,
+    .handle = 6,
+    .content_type = CEL_TYPE_SYSTEMD,
+  };
+
+  event.content.systemd.event_type = CEL_TYPE_SYSTEMD_EVENT_PHASE;
+  memcpy(event.content.systemd.string.buffer, "falafel", 7);
+  event.content.systemd.string.size = 7;
+  event.content.systemd.timestamp = 7843;
+  memset(event.content.systemd.boot_id, 0xFA, 16);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Marshal(&event, &obj, 0);
+  assert_int_equal(r, CEL_RC_SUCCESS);
+  assert_non_null(obj);
+
+  assert_json_string_equal(obj, "systemd", JSON_KEY, "content_type", JSON_VALUE);
+  assert_json_string_equal(obj, "falafel", JSON_KEY, "content", JSON_KEY, "string", JSON_VALUE);
+  assert_json_string_equal(obj, "fafafafafafafafafafafafafafafafa", JSON_KEY, "content", JSON_KEY, "bootId", JSON_VALUE);
+  assert_json_int_equal(obj, 7843, JSON_KEY, "content", JSON_KEY, "timestamp", JSON_INTEGER);
+
+}
+
+void test_json_systemd_numbers(void **state) {
+  (void) state;
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event = {
+    .recnum = 1234,
+    .handle = 6,
+    .content_type = CEL_TYPE_SYSTEMD,
+  };
+
+  event.content.systemd.event_type = CEL_TYPE_SYSTEMD_EVENT_FILESYSTEM;
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Marshal(&event, &obj, CEL_JSON_FLAGS_USE_NUMBERS);
+  assert_int_equal(r, CEL_RC_SUCCESS);
+  assert_non_null(obj);
+
+  assert_json_int_equal(obj, CEL_TYPE_SYSTEMD_EVENT_FILESYSTEM, JSON_KEY, "content", JSON_KEY, "event_type", JSON_INTEGER);
+
+}
+
+void test_json_systemd_bad_event_type(void **state) {
+  (void) state;
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event = {
+    .recnum = 1234,
+    .handle = 6,
+    .content_type = CEL_TYPE_SYSTEMD,
+  };
+
+  event.content.systemd.event_type = 0xFF;
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Marshal(&event, &obj, 0);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_json_systemd_unmarshal(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, 0);
+}
+
+void test_json_systemd_unmarshal_bad_event_type(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_event_type.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_json_systemd_unmarshal_bad_event_type_str(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_event_type_str.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_json_systemd_unmarshal_bad_event_type_json_type(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_event_type_json_type.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_json_systemd_unmarshal_bad_event_type_num(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_event_type_num.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_json_systemd_unmarshal_bad_timestamp(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_timestamp.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_json_systemd_unmarshal_missing_event_type(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_missing_event_type.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_json_systemd_unmarshal_missing_string(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_missing_string.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_json_systemd_unmarshal_bad_bootid(void **state) {
+  (void) state;
+  char data[2048];
+  CEL_RC r;
+  json_object *obj = NULL;
+  TPMS_CEL_EVENT event;
+
+  load_data("data/systemd_bad_bootid.json", data);
+  obj = json_tokener_parse(data);
+  assert_non_null(obj);
+
+  r = CEL_JSON_TPMS_CEL_EVENT_Unmarshal(obj, &event);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
 int main(int argc, char **argv)
 {
   (void) argc;
@@ -982,6 +1183,18 @@ int main(int argc, char **argv)
     cmocka_unit_test(test_json_unmarshal_ima_template),
     cmocka_unit_test(test_json_unmarshal_bad_ima_template),
     cmocka_unit_test(test_json_unmarshal_bad_event),
+    cmocka_unit_test(test_json_systemd),
+    cmocka_unit_test(test_json_systemd_numbers),
+    cmocka_unit_test(test_json_systemd_bad_event_type),
+    cmocka_unit_test(test_json_systemd_unmarshal),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_event_type),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_event_type_str),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_event_type_json_type),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_event_type_num),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_timestamp),
+    cmocka_unit_test(test_json_systemd_unmarshal_missing_event_type),
+    cmocka_unit_test(test_json_systemd_unmarshal_missing_string),
+    cmocka_unit_test(test_json_systemd_unmarshal_bad_bootid),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

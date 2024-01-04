@@ -1,0 +1,10 @@
+{
+    "recnum": 0,
+    "pcr": 3,
+    "content_type": "systemd",
+    "content": {
+	"string": "falafel",
+	"bootId": "fafafafafafafafafafafafafafafafa",
+	"timestamp": 4000
+    }
+}

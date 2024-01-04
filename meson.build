@@ -7,10 +7,8 @@ project(
   license: 'GPL3',
   default_options : ['warning_level=3']
 )
-dependencies = [dependency('tss2-mu')]
-json_dep = dependency('json-c')
-test_dep = [dependency('cmocka'), dependency('libcrypto')]
-json_test_dep = [dependency('cmocka'), dependency('json-c')]
+dependencies = [dependency('tss2-mu'), dependency('json-c')]
+test_dep = [dependency('cmocka'), dependency('libcrypto'), dependency('json-c')]
 
 inc = include_directories('include')
 

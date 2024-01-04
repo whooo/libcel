@@ -5,9 +5,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <json-c/json_object.h>
+#include <json-c/json_tokener.h>
 #include "cel_types.h"
 #include "cel_io.h"
+#include "cel_json_utils.h"
 
+
+/* needed for systemd parsing */
+CEL_RC
+CEL_JSON_TPML_DIGEST_VALUES_Unmarshal(
+  const json_object *obj,
+  TPML_DIGEST_VALUES *dest);
+
+/* needed for systemd parsing */
+CEL_RC
+CEL_JSON_TPMS_EVENT_SYSTEMD_Unmarshal(
+  const json_object *obj,
+  TPMS_EVENT_SYSTEMD *dest);
 
 struct pair_entry {
   TPM2_HANDLE handle;
@@ -137,7 +152,10 @@ CEL_Parse_UEFI_Event(
     return r;
   }
 
-  r = get_le_uint32(buffer, len, &off, &event->content.pcclient_std.event_type);
+  r = get_le_uint32(buffer,
+		    len,
+		    &off,
+		    &event->content.pcclient_std.event_type);
   if (r) {
     return r;
   }
@@ -301,4 +319,89 @@ CEL_Parse_IMA_TEMPLATE_Event(
   set_offset(offset, off);
 
   return CEL_RC_SUCCESS;
+}
+
+CEL_RC
+CEL_Parse_SYSTEMD_Event(
+  CEL_PARSE_CONTEXT *ctx,
+  TPMS_CEL_EVENT *event,
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset)
+{
+  CEL_RC r;
+  size_t off = get_offset(offset);
+  int hasit;
+  struct json_tokener *jtok = NULL;
+  json_object *obj = NULL, *jd = NULL, *jc = NULL;
+
+  CHECK_NULL(ctx);
+  CHECK_NULL(event);
+  CHECK_NULL(buffer);
+
+  jtok = json_tokener_new();
+  if (!jtok) {
+    return CEL_RC_MEMORY;
+  }
+  obj = json_tokener_parse_ex(jtok, (const char *) &buffer[off], len - off);
+  if (!obj) {
+    r = CEL_RC_INVALID_VALUE;
+    goto out;
+  }
+
+  if (!json_object_is_type(obj, json_type_object)) {
+    r = CEL_RC_INVALID_TYPE;
+    goto out;
+  }
+
+  r = get_json_content_type(obj, &event->content_type);
+  if (r) {
+    goto out;
+  }
+
+  if (event->content_type != CEL_TYPE_SYSTEMD) {
+    r = CEL_RC_INVALID_TYPE;
+    goto out;
+  }
+
+  r = get_json_handle(obj, &event->handle);
+  if (r) {
+    goto out;
+  }
+
+  hasit = json_object_object_get_ex(obj, "digests", &jd);
+  if (!hasit) {
+    r = CEL_RC_INVALID_VALUE;
+    goto out;
+  }
+  r = CEL_JSON_TPML_DIGEST_VALUES_Unmarshal(jd, &event->digests);
+  if (r) {
+    goto out;
+  }
+
+  hasit = json_object_object_get_ex(obj, "content", &jc);
+  if (!hasit) {
+    r = CEL_RC_INVALID_VALUE;
+    goto out;
+  }
+
+  r = CEL_JSON_TPMS_EVENT_SYSTEMD_Unmarshal(jc, &event->content.systemd);
+  if (r) {
+    goto out;
+  }
+
+  r = CEL_Parse_Get_RECNUM(ctx, event->handle, &event->recnum);
+  if (r) {
+    goto out;
+  }
+
+  off = json_tokener_get_parse_end(jtok) + off;
+  set_offset(offset, off);
+
+  r = CEL_RC_SUCCESS;
+ out:
+  if (jtok) {
+    json_tokener_free(jtok);
+  }
+  return r;
 }
