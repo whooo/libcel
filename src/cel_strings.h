@@ -45,5 +45,11 @@ state_trans_to_str(CEL_TYPE trans);
 CEL_RC
 str_to_state_trans(const char *str, TPMI_STATE_TRANS *dest);
 
+const char *
+systemd_event_to_str(TPMI_SYSTEMD_EVENTS event_type);
+
+CEL_RC
+str_to_systemd_event(const char *str, TPMI_SYSTEMD_EVENTS *dest);
+
 #define _CEL_STRINGS_H_
 #endif

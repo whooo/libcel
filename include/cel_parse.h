@@ -48,4 +48,11 @@ CEL_Parse_IMA_TEMPLATE_Event(
   size_t len,
   size_t *offset);
 
+CEL_RC
+CEL_Parse_SYSTEMD_Event(
+  CEL_PARSE_CONTEXT *ctx,
+  TPMS_CEL_EVENT *event,
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset);
 #endif

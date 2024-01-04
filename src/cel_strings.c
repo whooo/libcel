@@ -200,6 +200,10 @@ struct {
     .typestr = "ima_tlv",
   },
   {
+    .type = CEL_TYPE_SYSTEMD,
+    .typestr = "systemd",
+  },
+  {
     .type = 0,
     .typestr = NULL,
   },
@@ -251,6 +255,32 @@ struct {
     .trans = 0xFF,
     .transstr = NULL,
   },
+};
+
+struct {
+  TPMI_SYSTEMD_EVENTS type;
+  const char *typestr;
+} systemd_event_str[] = {
+  {
+    .type = CEL_TYPE_SYSTEMD_EVENT_PHASE,
+    .typestr = "phase",
+  },
+  {
+    .type = CEL_TYPE_SYSTEMD_EVENT_FILESYSTEM,
+    .typestr = "filesystem",
+  },
+  {
+    .type = CEL_TYPE_SYSTEMD_EVENT_VOLUME_KEY,
+    .typestr = "volume-key",
+  },
+  {
+    .type = CEL_TYPE_SYSTEMD_EVENT_MACHINE_ID,
+    .typestr = "machine-id",
+  },
+  {
+    .type = 0xFF,
+    .typestr = NULL,
+  }
 };
 
 const char *
@@ -400,4 +430,26 @@ str_to_state_trans(const char *str, TPMI_STATE_TRANS *dest) {
     }
   }
   return CEL_RC_INVALID_VALUE;
+}
+
+const char *
+systemd_event_to_str(TPMI_SYSTEMD_EVENTS event_type) {
+  for (int i=0;systemd_event_str[i].typestr != NULL;i++) {
+    if (systemd_event_str[i].type == event_type) {
+      return systemd_event_str[i].typestr;
+    }
+  }
+
+  return NULL;
+}
+
+CEL_RC
+str_to_systemd_event(const char *str, TPMI_SYSTEMD_EVENTS *dest) {
+  for (int i=0;systemd_event_str[i].typestr != NULL;i++) {
+    if (!strcasecmp(str, systemd_event_str[i].typestr)) {
+      *dest = systemd_event_str[i].type;
+      return CEL_RC_SUCCESS;
+    }
+  }
+  return CEL_RC_INVALID_TYPE;
 }

@@ -952,6 +952,310 @@ void test_tlv_tpms_cel_event(void **state) {
   assert_int_equal(r, CEL_RC_SHORT_BUFFER);
 }
 
+void test_tlv_tpms_systemd(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event, event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[68],
+    expected_buffer[68] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x2E" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\x03\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    ;
+
+  event.recnum = 2;
+  event.pcr = 3;
+  event.digests.count = 0;
+  event.content_type = CEL_TYPE_SYSTEMD;
+  event.content.systemd.event_type = CEL_TYPE_SYSTEMD_EVENT_VOLUME_KEY;
+  event.content.systemd.timestamp = 0xAAAA;
+  memcpy(event.content.systemd.boot_id, "\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA", 16);
+  memcpy(event.content.systemd.string.buffer, "falafel", 7);
+  event.content.systemd.string.size = 7;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Marshal(&event, buffer, 68, &off);
+  assert_int_equal(r, 0);
+  assert_int_equal(off, 68);
+  assert_memory_equal(buffer, expected_buffer, 68);
+
+  off = 0;
+  r = CEL_TLV_TPMS_CEL_EVENT_Marshal(&event, NULL, 0, &off);
+  assert_int_equal(r, 0);
+  assert_int_equal(off, 68);
+
+  // test short buffer
+  off = 0;
+  r = CEL_TLV_TPMS_CEL_EVENT_Marshal(&event, buffer, 20, &off);
+  assert_int_equal(r, CEL_RC_SHORT_BUFFER);
+
+  // test unmarshal
+  off = 0;
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(expected_buffer, 68, &off, &event_out);
+  assert_int_equal(r, 0);
+  assert_int_equal(off, 68);
+  assert_int_equal(event.content_type, event_out.content_type);
+  assert_int_equal(event.content.systemd.event_type, event_out.content.systemd.event_type);
+  assert_int_equal(event.content.systemd.timestamp, event_out.content.systemd.timestamp);
+  assert_memory_equal(event.content.systemd.boot_id, event_out.content.systemd.boot_id, sizeof(event.content.systemd.boot_id));
+  assert_int_equal(event.content.systemd.string.size, event_out.content.systemd.string.size);
+  assert_memory_equal(event.content.systemd.string.buffer, event_out.content.systemd.string.buffer, event_out.content.systemd.string.size);
+
+  // test unmarshal short buffer
+  off = 0;
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(expected_buffer, 60, &off, &event_out);
+  assert_int_equal(r, CEL_RC_SHORT_BUFFER);
+}
+
+void test_tlv_tpms_systemd_missing_event_type(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[62] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x28" // 17 - 21 CEL systemd
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 22 - 28 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 29 - 49 boot_id
+    "\x03\x00\x00\x00\x07" // 50 - 54 string type
+    "falafel" // 55 - 63 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 62, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_missing_timestamp(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[61] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x27" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 28 - 48 boot_id
+    "\x03\x00\x00\x00\x07" // 49 - 53 string type
+    "falafel" // 54 - 60 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 61, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_missing_boot_id(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[47] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x19" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x03\x00\x00\x00\x07" // 35 - 39 string type
+    "falafel" // 40 - 46 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 47, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_missing_string(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[56] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x22" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 56, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_short_boot_id(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[67] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x2D" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x0F\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 54 boot_id
+    "\x03\x00\x00\x00\x07" // 55 - 59 string type
+    "falafel" // 60 - 66 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 67, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_large_event_type(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[69] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x2F" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x02\x02\x00" // 22 - 28 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 29 - 35 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 36 - 56 boot_id
+    "\x03\x00\x00\x00\x07" // 57 - 61 string type
+    "falafel" // 62 - 68 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 69, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_bad_type(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[68] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x2E" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\xFF\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 68, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_TYPE);
+}
+
+void test_tlv_tpms_systemd_double_event_type(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[74] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x34" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\x03\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    "\x00\x00\x00\x00\x01\x03" // 68 - 73 extra event type
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 74, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_double_timestamp(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[74] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x34" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\x03\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    "\x01\x00\x00\x00\x01\xFF" // 68 - 73 extra timestamp
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 74, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_double_boot_id(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[89] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x43" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\x03\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 68 - 88 extra boot_id
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 89, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
+void test_tlv_tpms_systemd_double_string(void **state) {
+  (void) state;
+  TPMS_CEL_EVENT event_out;
+  UINT32 r;
+  size_t off = 0;
+  uint8_t
+    buffer[80] =
+    "\x00\x00\x00\x00\x01\x02" // 0 - 5 recnum
+    "\x01\x00\x00\x00\x01\x03" // 6 - 11 pcr
+    "\x03\x00\x00\x00\x00" // 12 - 16 empty digests
+    "\x0B\x00\x00\x00\x3A" // 17 - 21 CEL systemd
+    "\x00\x00\x00\x00\x01\x02" // 22 - 27 event type volume key
+    "\x01\x00\x00\x00\x02\xAA\xAA" // 28 - 34 timestamp
+    "\x02\x00\x00\x00\x10\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA\xFA" // 35 - 55 boot_id
+    "\x03\x00\x00\x00\x07" // 56 - 60 string type
+    "falafel" // 61 - 67 string
+    "\x03\x00\x00\x00\x07" // 68 - 72 extra string type
+    "falafel" // 73 - 79 extra string
+    ;
+
+  r = CEL_TLV_TPMS_CEL_EVENT_Unmarshal(buffer, 89, &off, &event_out);
+  assert_int_equal(r, CEL_RC_INVALID_VALUE);
+}
+
 int main(int argc, char **argv)
 {
   (void) argc;
@@ -969,6 +1273,18 @@ int main(int argc, char **argv)
     cmocka_unit_test(test_tlv_tpms_event_ima_template),
     cmocka_unit_test(test_tlv_tpml_event_celmgt),
     cmocka_unit_test(test_tlv_tpms_cel_event),
+    cmocka_unit_test(test_tlv_tpms_systemd),
+    cmocka_unit_test(test_tlv_tpms_systemd_missing_event_type),
+    cmocka_unit_test(test_tlv_tpms_systemd_missing_timestamp),
+    cmocka_unit_test(test_tlv_tpms_systemd_missing_boot_id),
+    cmocka_unit_test(test_tlv_tpms_systemd_missing_string),
+    cmocka_unit_test(test_tlv_tpms_systemd_short_boot_id),
+    cmocka_unit_test(test_tlv_tpms_systemd_large_event_type),
+    cmocka_unit_test(test_tlv_tpms_systemd_bad_type),
+    cmocka_unit_test(test_tlv_tpms_systemd_double_event_type),
+    cmocka_unit_test(test_tlv_tpms_systemd_double_timestamp),
+    cmocka_unit_test(test_tlv_tpms_systemd_double_boot_id),
+    cmocka_unit_test(test_tlv_tpms_systemd_double_string),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

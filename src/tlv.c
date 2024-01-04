@@ -509,6 +509,90 @@ CEL_TLV_TPMS_EVENT_IMA_TEMPLATE_Marshal(
 }
 
 CEL_RC
+CEL_TLV_TPMS_EVENT_SYSTEMD_Marshal(
+  const TPMS_EVENT_SYSTEMD *src,
+  uint8_t *buffer,
+  size_t len,
+  size_t *offset)
+{
+  CEL_RC r;
+  size_t off = get_offset(offset), suboff = 0;
+
+  CHECK_NULL(src);
+
+  CEL_TLV_UINT64_Marshal(CEL_TYPE_SYSTEMD_EVENT_TYPE,
+			 src->event_type,
+			 NULL,
+			 0,
+			 &suboff);
+
+  CEL_TLV_UINT64_Marshal(CEL_TYPE_SYSTEMD_TIMESTAMP,
+			 src->timestamp,
+			 NULL,
+			 0,
+			 &suboff);
+
+  put_tlv(CEL_TYPE_SYSTEMD_BOOT_ID,
+	  sizeof(src->boot_id),
+	  src->boot_id,
+	  NULL,
+	  0,
+	  &suboff);
+
+  CEL_TLV_BYTEBUFFER_Marshal(CEL_TYPE_SYSTEMD_STRING,
+			     &src->string,
+			     NULL,
+			     0,
+			     &suboff);
+
+  r = put_tlv(CEL_TYPE_SYSTEMD, suboff, NULL, buffer, len, &off);
+  if (r) {
+    return r;
+  }
+
+  r = CEL_TLV_UINT64_Marshal(CEL_TYPE_SYSTEMD_EVENT_TYPE,
+			     src->event_type,
+			     buffer,
+			     len,
+			     &off);
+  if (r) {
+    return r;
+  }
+
+  r= CEL_TLV_UINT64_Marshal(CEL_TYPE_SYSTEMD_TIMESTAMP,
+			    src->timestamp,
+			    buffer,
+			    len,
+			    &off);
+  if (r) {
+    return r;
+  }
+
+  r = put_tlv(CEL_TYPE_SYSTEMD_BOOT_ID,
+	      sizeof(src->boot_id),
+	      src->boot_id,
+	      buffer,
+	      len,
+	      &off);
+  if (r) {
+    return r;
+  }
+
+  r = CEL_TLV_BYTEBUFFER_Marshal(CEL_TYPE_SYSTEMD_STRING,
+				 &src->string,
+				 buffer,
+				 len,
+				 &off);
+  if (r) {
+    return r;
+  }
+
+  set_offset(offset, off);
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 CEL_TLV_TPMS_CEL_EVENT_Marshal(
   const TPMS_CEL_EVENT *src,
   uint8_t *buffer,
@@ -564,6 +648,12 @@ CEL_TLV_TPMS_CEL_EVENT_Marshal(
 						buffer,
 						len,
 						&off);
+    break;
+  case CEL_TYPE_SYSTEMD:
+    r = CEL_TLV_TPMS_EVENT_SYSTEMD_Marshal(&cont->systemd,
+					   buffer,
+					   len,
+					   &off);
     break;
   default:
     r = CEL_RC_INVALID_TYPE;
@@ -1253,6 +1343,128 @@ CEL_TLV_TPML_EVENT_CELMGT_Unmarshal(
 }
 
 CEL_RC
+CEL_TLV_TPMS_EVENT_SYSTEMD_Unmarshal(
+  const uint8_t *buffer,
+  size_t len,
+  size_t *offset,
+  TPMS_EVENT_SYSTEMD *dest)
+{
+  CEL_RC r;
+  UINT32 sublen, boot_id_len;
+  size_t off = get_offset(offset), suboff = 0;
+  const uint8_t *subbuf = NULL;
+  CEL_TYPE type;
+  UINT64 ti;
+  int seen_event_type = 0, seen_string = 0, seen_timestamp = 0,
+    seen_boot_id = 0;
+
+  CHECK_NULL(buffer);
+  CHECK_NULL(dest);
+
+  r = get_tl_with_type(buffer,
+		       len,
+		       &off,
+		       CEL_TYPE_SYSTEMD,
+		       &sublen);
+  if (r) {
+    return r;
+  }
+  subbuf = buffer + off;
+
+  while (suboff < sublen) {
+    r = peek_type(subbuf, sublen, &suboff, &type);
+    if (r) {
+      break;
+    }
+    if (
+      (type == CEL_TYPE_SYSTEMD_EVENT_TYPE && seen_event_type) ||
+      (type == CEL_TYPE_SYSTEMD_STRING && seen_string) ||
+      (type == CEL_TYPE_SYSTEMD_TIMESTAMP && seen_timestamp) ||
+      (type == CEL_TYPE_SYSTEMD_BOOT_ID && seen_boot_id))
+    {
+      r = CEL_RC_INVALID_VALUE;
+      break;
+    }
+    switch (type) {
+    case CEL_TYPE_SYSTEMD_EVENT_TYPE:
+      r = CEL_TLV_UINT64_Unmarshal(subbuf,
+				   sublen,
+				   &suboff,
+				   CEL_TYPE_SYSTEMD_EVENT_TYPE,
+				   &ti);
+      if (r) {
+	break;
+      }
+      if (ti > UINT8_MAX) {
+	r = CEL_RC_INVALID_VALUE;
+	break;
+      }
+      dest->event_type = ti;
+      seen_event_type = 1;
+      break;
+    case CEL_TYPE_SYSTEMD_STRING:
+      r = CEL_TLV_BYTEBUFFER_Unmarshal(subbuf,
+				       sublen,
+				       &suboff,
+				       CEL_TYPE_SYSTEMD_STRING,
+				       &dest->string);
+      if (r) {
+	break;
+      }
+      seen_string = 1;
+      break;
+    case CEL_TYPE_SYSTEMD_TIMESTAMP:
+      r = CEL_TLV_UINT64_Unmarshal(subbuf,
+				   sublen,
+				   &suboff,
+				   CEL_TYPE_SYSTEMD_TIMESTAMP,
+				   &dest->timestamp);
+      if (r) {
+	break;
+      }
+      seen_timestamp = 1;
+      break;
+    case CEL_TYPE_SYSTEMD_BOOT_ID:
+      r = get_tl_with_type(subbuf,
+			   sublen,
+			   &suboff,
+			   CEL_TYPE_SYSTEMD_BOOT_ID,
+			   &boot_id_len);
+      if (r) {
+	break;
+      }
+      if (boot_id_len != sizeof(dest->boot_id)) {
+	r = CEL_RC_INVALID_VALUE;
+	break;
+      }
+      memcpy(dest->boot_id, subbuf + suboff, boot_id_len);
+      suboff += sizeof(dest->boot_id);
+      seen_boot_id = 1;
+      break;
+    default:
+      r = CEL_RC_INVALID_TYPE;
+      break;
+    }
+    if (r) {
+      break;
+    }
+  }
+  if (r) {
+    return r;
+  }
+
+  if (!seen_event_type || !seen_string || !seen_timestamp || !seen_boot_id) {
+    return CEL_RC_INVALID_VALUE;
+  }
+
+  off += suboff;
+
+  set_offset(offset, off);
+
+  return CEL_RC_SUCCESS;
+}
+
+CEL_RC
 CEL_TLV_TPMS_CEL_EVENT_Unmarshal(
   const uint8_t *buffer,
   size_t len,
@@ -1329,6 +1541,12 @@ CEL_TLV_TPMS_CEL_EVENT_Unmarshal(
 						len,
 						&off,
 						&cont->ima_template);
+    break;
+  case CEL_TYPE_SYSTEMD:
+    r = CEL_TLV_TPMS_EVENT_SYSTEMD_Unmarshal(buffer,
+					     len,
+					     &off,
+					     &cont->systemd);
     break;
   default:
     r = CEL_RC_INVALID_TYPE;

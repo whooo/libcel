@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <openssl/evp.h>
+#include <unistd.h>
 #include "cel_types.h"
 #include "cel_parse.h"
 
@@ -73,6 +74,17 @@ int decode_file(const char *path, uint8_t **dest, size_t *dest_len) {
  fail:
   free(*dest);
   return -1;
+}
+
+void load_data(const char *name, uint8_t data[2048]) {
+  int r, fd;
+
+  memset(data, 0, 2048);
+  fd = open(name, O_RDONLY);
+  assert_true(fd >= 0);
+
+  r = read(fd, data, 2048);
+  assert_true(r > 0);
 }
 
 void test_parse_uefi(void **state) {
@@ -327,6 +339,126 @@ void test_parse_ima_short(void **state) {
 
 }
 
+void test_parse_systemd(void **state) {
+  (void) state;
+  CEL_RC cr;
+  CEL_PARSE_CONTEXT *ctx = NULL;
+  TPMS_CEL_EVENT event;
+  uint8_t data[2048];
+  size_t off = 0, sl = 0;
+
+  load_data("data/systemd-seq.json", data);
+  sl = strlen((const char *) data);
+
+  cr = CEL_Parse_Init(&ctx);
+  assert_int_equal(cr, 0);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, data, sl, &off);
+  assert_int_equal(cr, 0);
+  assert_int_equal(event.content_type, CEL_TYPE_SYSTEMD);
+  assert_int_equal(event.recnum, 0);
+  assert_int_equal(event.handle, 1);
+  assert_int_equal(event.content.systemd.timestamp, 1);
+  assert_int_equal(event.content.systemd.event_type, CEL_TYPE_SYSTEMD_EVENT_PHASE);
+  assert_memory_equal(event.content.systemd.boot_id, "\xfa\x1a\xfe\x1f\xa1\xaf\xe1\xfa\x1a\xfe\x1f\xa1\xaf\xe1\xff\xff", 16);
+  assert_memory_equal(event.content.systemd.string.buffer, "phase-tahini", event.content.systemd.string.size);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, data, sl, &off);
+  assert_int_equal(cr, 0);
+  assert_int_equal(event.content_type, CEL_TYPE_SYSTEMD);
+  assert_int_equal(event.recnum, 1);
+  assert_int_equal(event.handle, 1);
+  assert_int_equal(event.content.systemd.timestamp, 2);
+  assert_int_equal(event.content.systemd.event_type, CEL_TYPE_SYSTEMD_EVENT_FILESYSTEM);
+  assert_memory_equal(event.content.systemd.string.buffer, "filesystem-tahini", event.content.systemd.string.size);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, data, sl, &off);
+  assert_int_equal(cr, 0);
+  assert_int_equal(event.content_type, CEL_TYPE_SYSTEMD);
+  assert_int_equal(event.recnum, 2);
+  assert_int_equal(event.handle, 1);
+  assert_int_equal(event.content.systemd.timestamp, 3);
+  assert_int_equal(event.content.systemd.event_type, CEL_TYPE_SYSTEMD_EVENT_MACHINE_ID);
+  assert_memory_equal(event.content.systemd.string.buffer, "machine-id-tahini", event.content.systemd.string.size);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, data, sl, &off);
+  assert_int_equal(cr, 0);
+  assert_int_equal(event.content_type, CEL_TYPE_SYSTEMD);
+  assert_int_equal(event.recnum, 3);
+  assert_int_equal(event.handle, 1);
+  assert_int_equal(event.content.systemd.timestamp, 4);
+  assert_int_equal(event.content.systemd.event_type, CEL_TYPE_SYSTEMD_EVENT_VOLUME_KEY);
+  assert_memory_equal(event.content.systemd.string.buffer, "volume-key-tahini", event.content.systemd.string.size);
+
+  assert_int_equal(off, sl);
+}
+
+void test_parse_systemd_nulls(void **state) {
+  (void) state;
+  CEL_RC cr;
+  CEL_PARSE_CONTEXT *ctx = NULL;
+  TPMS_CEL_EVENT event;
+
+  cr = CEL_Parse_SYSTEMD_Event(NULL, NULL, NULL, 0, NULL);
+  assert_int_equal(cr, CEL_RC_BAD_REFERENCE);
+
+  cr = CEL_Parse_Init(&ctx);
+  assert_int_equal(cr, 0);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, NULL, NULL, 0, NULL);
+  assert_int_equal(cr, CEL_RC_BAD_REFERENCE);
+
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, NULL, 0, NULL);
+  assert_int_equal(cr, CEL_RC_BAD_REFERENCE);
+
+}
+
+void test_parse_systemd_bad(void **state) {
+  (void) state;
+  CEL_RC cr;
+  CEL_PARSE_CONTEXT *ctx = NULL;
+  TPMS_CEL_EVENT event;
+
+  cr = CEL_Parse_Init(&ctx);
+  assert_int_equal(cr, 0);
+
+  // bad json
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "\"", 1, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_VALUE);
+
+  // not json object
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "[]", 2, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_TYPE);
+
+  // missing content type
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{}", 2, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_VALUE);
+
+  // content type not string/int
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": []}", 20, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_TYPE);
+
+  // not systemd type
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": \"cel\"}", 23, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_TYPE);
+
+  // missing handle
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": \"systemd\"}", 27, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_VALUE);
+
+  // missing digests
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": \"systemd\", \"pcr\": 1}", 37, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_VALUE);
+
+  // bad digests
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": \"systemd\", \"pcr\": 1, \"digests\": {}}", 52, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_TYPE);
+
+  // missing content
+  cr = CEL_Parse_SYSTEMD_Event(ctx, &event, (uint8_t *) "{\"content_type\": \"systemd\", \"pcr\": 1, \"digests\": []}", 52, NULL);
+  assert_int_equal(cr, CEL_RC_INVALID_VALUE);
+}
+
 int main(int argc, char **argv)
 {
   (void) argc;
@@ -355,6 +487,9 @@ int main(int argc, char **argv)
     cmocka_unit_test_prestate(test_parse_uefi_header_short, &data),
     cmocka_unit_test_prestate(test_parse_uefi_short, &data),
     cmocka_unit_test_prestate(test_parse_ima_short, &data),
+    cmocka_unit_test(test_parse_systemd),
+    cmocka_unit_test(test_parse_systemd_nulls),
+    cmocka_unit_test(test_parse_systemd_bad),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

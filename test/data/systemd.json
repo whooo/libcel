@@ -1,0 +1,11 @@
+{
+    "recnum": 0,
+    "pcr": 3,
+    "content_type": "systemd",
+    "content": {
+	"eventType": 2,
+	"string": "falafel",
+	"bootId": "fafafafafafafafafafafafafafafafa",
+	"timestamp": 4000
+    }
+}
